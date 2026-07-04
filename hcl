@@ -12,3 +12,20 @@ resource "aws_instance" "master" {
     Role = "master"
   }
 }
+resource "aws_instance" "worker" {
+  count         = var.worker_count
+  ami           = "ami-0c02fb55956c7d316"
+  instance_type = var.instance_type
+  key_name      = var.key_name
+
+  security_groups = [aws_security_group.ultrastake_sg.name]
+
+  user_data = templatefile("${path.module}/user_data_worker.sh", {
+    master_ip = aws_instance.master.public_ip
+  })
+
+  tags = {
+    Name = "ultrastake-worker-${count.index}"
+    Role = "worker"
+  }
+}
