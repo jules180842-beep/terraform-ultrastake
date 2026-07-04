@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # API Gateway - Main entry point
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - AUTH_SERVICE_URL=http://auth:8001
+      - USERS_SERVICE_URL=http://users:8002
+      - BILLING_SERVICE_URL=http://billing:8003
+      - ORGS_SERVICE_URL=http://orgs:8004
+      - USAGE_SERVICE_URL=http://usage:8005
+    depends_on:
+      - auth
+      - users
+      - billing
+      - orgs
+      - usage
+    networks:
+      - ultrastake
+
+  # Auth Service
+  auth:
+    build:
+      context: .
+      dockerfile: Dockerfile.auth
+    ports:
+      - "8001:8001"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-change-me-super-secret}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=60
+      - REFRESH_TOKEN_EXPIRE_DAYS=7
+    networks:
+      - ultrastake
+    command: uvicorn auth.main:app --host 0.0.0.0 --port 8001 --reload
+
+  # Users Service
+  users:
+    build:
+      context: .
+      dockerfile: Dockerfile.users
+    ports:
+      - "8002:8002"
+    networks:
+      - ultrastake
+    command: uvicorn users.main:app --host 0.0.0.0 --port 8002 --reload
+
+  # Billing Service
+  billing:
+    build:
+      context: .
+      dockerfile: Dockerfile.billing
+    ports:
+      - "8003:8003"
+    environment:
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-sk_test_your_key}
+      - STRIPE_STARTER_PRICE_ID=${STRIPE_STARTER_PRICE_ID:-price_starter_id}
+      - STRIPE_PRO_PRICE_ID=${STRIPE_PRO_PRICE_ID:-price_pro_id}
+      - STRIPE_ENTERPRISE_PRICE_ID=${STRIPE_ENTERPRISE_PRICE_ID:-price_enterprise_id}
+      - STRIPE_SUCCESS_URL=http://localhost:3000/billing/success
+      - STRIPE_CANCEL_URL=http://localhost:3000/billing/cancel
+    networks:
+      - ultrastake
+    command: uvicorn billing.main:app --host 0.0.0.0 --port 8003 --reload
+
+  # Organizations Service
+  orgs:
+    build:
+      context: .
+      dockerfile: Dockerfile.orgs
+    ports:
+      - "8004:8004"
+    networks:
+      - ultrastake
+    command: uvicorn orgs.main:app --host 0.0.0.0 --port 8004 --reload
+
+  # Usage Service
+  usage:
+    build:
+      context: .
+      dockerfile: Dockerfile.usage
+    ports:
+      - "8005:8005"
+    networks:
+      - ultrastake
+    command: uvicorn usage.main:app --host 0.0.0.0 --port 8005 --reload
+
+networks:
+  ultrastake:
+    driver: bridge
