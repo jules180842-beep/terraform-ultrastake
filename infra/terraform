@@ -1,0 +1,7 @@
+infra/terraform/
+├── main.tf
+├── variables.tf
+├── outputs.tf
+├── provider.tf
+├── user_data_master.sh
+├── user_data_worker.sh
